@@ -18,7 +18,7 @@ import { Launch } from '@mui/icons-material';
 import { link_portfolios, link_root } from '../../links/links';
 import { orange } from '@mui/material/colors';
 
-const pages = ['Portfolios', 'Upgrade to Premium 💎'];
+const pages = ['Portfolios'];  // TODO: 'Upgrade to Premium 💎'
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 
 const TopNavBar = () => {
