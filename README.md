@@ -6,7 +6,7 @@ ReactJS Frontend Application for Cryptotax Django REST API backend.
 Inteded to analyse crypto currency taxation (primarily for Germany)
 
 ### Related Projects
-- [Django REST API + pgSQL Backend](https:)
+- [Django REST API + pgSQL Backend](https://github.com/nerotyc/cryptotax_backend)
 
 ## Screenshots
 
@@ -30,6 +30,10 @@ Inteded to analyse crypto currency taxation (primarily for Germany)
 - report detail page
 - integrate .csv upload script into frontend
 - ...
+
+----
+----
+----
 
 ## React App Usage
 
