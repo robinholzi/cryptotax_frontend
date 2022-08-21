@@ -13,20 +13,62 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Copyright from '../../../components/copyright';
-import { link_login } from '../../../links/links';
+import { link_login, link_signup_success } from '../../../links/links';
+import { useSnackbar } from 'notistack';
+import { api_post_singup, SignupData } from '../../../api/auth/singup';
+import { CircularProgress } from '@mui/material';
+import { stringIsEmpty } from '../../../utils/string';
+import  { Navigate  } from 'react-router-dom'
 
-const theme = createTheme();
+export default function SignUpSuccessPage() {
+  const { enqueueSnackbar } = useSnackbar();
+  const [loading, setLoading] = React.useState(false);
+  const [redirectSuccess, setRedirectSuccess] = React.useState(false);
+  const [signupData, setSignupData] = React.useState(new SignupData())
 
-export default function SignupPage() {
   const handleSubmit = (event) => {
+    if (loading) return;
+    setLoading(true);
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    // eslint-disable-next-line no-console
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+    
+    setTimeout(async () => {
+      const firstName = data.get('firstName')
+      const lastName = data.get('lastName')
+      const username = data.get('username')
+      const email = data.get('email')
+      const password = data.get('password')
+      const repeatPassword = data.get('repeatPassword')
+      const approveTerms = data.get('approveTerms')
+
+      signupData.firstName = firstName;
+      signupData.lastName = lastName;
+      signupData.username = username;
+      signupData.email = email;
+      signupData.password = password;
+      signupData.repeatPassword = repeatPassword;
+      signupData.approveTerms = approveTerms;
+      await api_post_singup(signupData);
+      if (signupData.hasError()) {
+        if (!stringIsEmpty(signupData.error)) {
+          enqueueSnackbar('Error: ' + signupData.errorEmail, { variant: 'error' });
+        } else {
+          enqueueSnackbar('Error: One or more formular fields are filled invalidly!', { variant: 'error' });
+        }
+      } else {
+        enqueueSnackbar('Signup successful. Please click email activation link!', { variant: 'success'});
+        setTimeout(() => {
+          setRedirectSuccess(true);
+        }, 1000);
+      }
+      setLoading(false);
+    }, 0);
+
   };
+
+  if (redirectSuccess) {
+    return <Navigate to={link_signup_success} />
+  }
 
   return (
     <Container component="main" maxWidth="xs">
@@ -49,14 +91,16 @@ export default function SignupPage() {
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
-                autoComplete="given-name"
-                name="firstName"
-                required
-                fullWidth
-                id="firstName"
-                label="First Name"
-                autoFocus
-              />
+              autoComplete="first-name"
+              name="firstName"
+              required
+              fullWidth
+              id="firstName"
+              label="First Name"
+              helperText={signupData.errorFirstName}
+              error={signupData.hasErrorFirstName()}
+              autoFocus
+            />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -65,7 +109,21 @@ export default function SignupPage() {
                 id="lastName"
                 label="Last Name"
                 name="lastName"
-                autoComplete="family-name"
+                autoComplete="last-name"
+                helperText={signupData.errorLastName}
+                error={signupData.hasErrorLastName()}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                id="username"
+                label="Username"
+                name="username"
+                autoComplete="username"
+                helperText={signupData.errorUsername}
+                error={signupData.hasErrorUsername()}
               />
             </Grid>
             <Grid item xs={12}>
@@ -76,6 +134,8 @@ export default function SignupPage() {
                 label="Email Address"
                 name="email"
                 autoComplete="email"
+                helperText={signupData.errorEmail}
+                error={signupData.hasErrorEmail()}
               />
             </Grid>
             <Grid item xs={12}>
@@ -87,34 +147,54 @@ export default function SignupPage() {
                 type="password"
                 id="password"
                 autoComplete="new-password"
+                helperText={signupData.errorPassword}
+                error={signupData.hasErrorPassword()}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                name="repeatPassword"
+                label="Repeat password"
+                type="password"
+                id="repeatPassword"
+                autoComplete="new-password"
+                helperText={signupData.errorRepeatPassword}
+                error={signupData.hasErrorRepeatPassword()}
               />
             </Grid>
             <Grid item xs={12}>
               <FormControlLabel
-                control={<Checkbox value="allowExtraEmails" color="primary" />}
-                label="I want to receive inspiration, marketing promotions and updates via email."
+                control={<Checkbox color="primary" name='approveTerms' id='approveTerms' value='approveTerms' error={signupData.hasErrorApproveTerms()} />}
+                label="I accept the terms of service depicted at <domain>/terms/"
               />
             </Grid>
           </Grid>
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Sign Up
-          </Button>
+          {
+            (loading) 
+              ? (
+                <center><Box p={7}><CircularProgress /></Box></center>
+              )
+              : (
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                >
+                  Sign Up
+                </Button>
+              )
+          }
           <Grid container justifyContent="flex-end">
             <Grid item>
-              <Link to={link_login} variant="body2">
+              <Link href={link_login} variant="body2">
                 Already have an account? Sign in
               </Link>
             </Grid>
           </Grid>
         </Box>
-      </Box>
-      <Box sx={{ mt: 8, mb: 4 }}>
-        <Copyright />
       </Box>
     </Container>
   );

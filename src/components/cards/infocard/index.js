@@ -5,7 +5,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 export const InfoCard = (props) => (
   <Card
-    sx={{ height: '100%' }}
+    sx={{ height: '100%', backgroundColor: "#222222" }}
     {...props}>
     <CardContent>
       <Grid
@@ -68,43 +68,78 @@ export const InfoCard = (props) => (
   </Card>
 );
 
-export const SmallInfoCard = (props) => (
-  <Card
-    sx={{ height: '100%' }}
-    {...props}>
-    <CardContent>
-      <Grid
-        container
-        spacing={3}
-        sx={{ justifyContent: 'space-between' }}
-      >
-        <Grid item>
-          <Typography
-            color="textSecondary"
-            gutterBottom
-            variant="overline"
-          >
-            BUDGET
-          </Typography>
-          <Typography
-            color="textPrimary"
-            variant="h5"
-          >
-            $24k
-          </Typography>
+export const SmallPlainInfoCard = (props) => {
+  return (
+    <Card
+      sx={{ height: '100%', backgroundColor: "#222222" }}
+      {...props}>
+      <CardContent>
+        <Grid
+          container
+          sx={{ justifyContent: 'space-between' }}
+        >
+          <Grid item>
+            <Typography
+              color="textSecondary"
+              gutterBottom
+              variant="overline"
+              lineHeight={2}
+            >
+              {props.title}
+            </Typography>
+            <Typography
+              color="textPrimary"
+              variant={String(props.value).length < 7 ? "h5" : "h6"}
+              pt={1.5}
+            >
+              {props.value}
+            </Typography>
+          </Grid>
         </Grid>
-        <Grid item>
-          <Avatar
-            sx={{
-              backgroundColor: 'secondary.main',
-              height: 45,
-              width: 45
-            }}
-          >
-            <AccountBalanceWalletIcon style={{color: "white"}} />
-          </Avatar>
+      </CardContent>
+    </Card>
+  )
+};
+
+export const SmallInfoCard = (props) => {
+  return (
+    <Card
+      sx={{ height: '100%', backgroundColor: "#222222" }}
+      {...props}>
+      <CardContent>
+        <Grid
+          container
+          spacing={3}
+          sx={{ justifyContent: 'space-between' }}
+        >
+          <Grid item>
+            <Typography
+              color="textSecondary"
+              gutterBottom
+              variant="overline"
+            >
+              {props.title}
+            </Typography>
+            <Typography
+              color="textPrimary"
+              variant="h5"
+            >
+              {props.value}
+            </Typography>
+          </Grid>
+          <Grid item>
+            <Avatar
+              sx={{
+                backgroundColor: 'secondary.main',
+                height: 40,
+                width: 40
+              }}
+            >
+              {props.children}
+            </Avatar>
+          </Grid>
         </Grid>
-      </Grid>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  )
+};

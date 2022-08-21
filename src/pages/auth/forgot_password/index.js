@@ -1,27 +1,43 @@
-import { Box, Container, Typography } from "@mui/material";
+import { Box, CircularProgress, Container, Typography } from "@mui/material";
 
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Copyright from "../../../components/copyright";
 import { link_signup, link_login } from "../../../links/links";
+import { useSnackbar } from "notistack";
+import { useState } from "react";
+import { api_resetPassword, ResetPasswordData } from "../../../api/auth/reset_password";
 
 export default function ForgotPasswordPage() {
+  const { enqueueSnackbar } = useSnackbar();
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = (event) => {
+    if (loading) return;
+    setLoading(true);
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    // eslint-disable-next-line no-console
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+
+    setTimeout(async () => {
+      const resetData = new ResetPasswordData(data.get('email'));
+      await api_resetPassword(resetData);
+      if (resetData.hasError()) {
+        if (resetData.hasErrorEmail()) {
+          enqueueSnackbar('Error: ' + resetData.errorEmail, { variant: 'error' });
+        } else {
+          enqueueSnackbar('Error: ' + resetData.error, { variant: 'error' });
+        }
+      } else {
+        enqueueSnackbar('Password reset email sent.', { variant: 'success'});
+      }
+      setLoading(false);
+    }, 0);
+
   };
 
   return (
@@ -52,30 +68,35 @@ export default function ForgotPasswordPage() {
             autoComplete="email"
             autoFocus
           />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Send Reset Email
-          </Button>
+          {
+              (loading) 
+                ? (
+                  <center><Box p={7}><CircularProgress /></Box></center>
+                )
+                : (
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                  >
+                    Send Reset Email
+                  </Button>
+                )
+          }
           <Grid container>
             <Grid item xs>
-              <Link to={link_login} variant="body2">
+              <Link href={link_login} variant="body2">
               {"Login"}
               </Link>
             </Grid>
             <Grid item>
-              <Link to={link_signup} variant="body2">
+              <Link href={link_signup} variant="body2">
                 {"Sign Up"}
               </Link>
             </Grid>
           </Grid>
         </Box>
-      </Box>
-      <Box sx={{ mt: 8, mb: 4 }}>
-        <Copyright />
       </Box>
     </Container>
   );

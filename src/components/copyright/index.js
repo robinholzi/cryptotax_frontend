@@ -4,13 +4,21 @@ import { Link } from "react-router-dom";
 
 export default function Copyright() {
   return (
-    <Typography variant="body2" color="text.secondary" align="center">
-      {'Copyright © '}
-      <Link to="https://nerotecs.com/" style={{ textDecoration: 'none', color: "white" }}>
-        NeroTecStudios
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
+    <div>
+      <Typography variant="body2" color="text.secondary" align="center">
+        {'Copyright © '}
+        <a href="https://nerotecs.com/" style={{ textDecoration: 'none', color: "white" }}>
+          NeroTecStudios
+        </a>{' '}
+        {new Date().getFullYear()}
+        {'.'}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" align="center">
+        {'by '}
+        <a href="https://robinh.xyz/" style={{ textDecoration: 'none', color: "white" }}>
+          Robin Holzinger
+        </a>{' '}
+      </Typography>
+    </div>
   );
 }

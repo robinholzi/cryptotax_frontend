@@ -4,26 +4,23 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Copyright from "../../../components/copyright";
-import { link_forgot_password, link_signup } from "../../../links/links";
-import { api_loginUser, LoginData } from "../../../api/login";
+import { link_forgot_password, link_login, link_signup, link_verification_resend } from "../../../links/links";
+import { api_loginUser, LoginData } from "../../../api/auth/login";
 import { useState } from "react";
 import { stringIsEmpty } from "../../../utils/string";
 import { storeToken } from "../../../controller/auth/auth";
+import { Navigate } from "react-router-dom";
 
 export default function LoginPage({setToken}) {
+  const [redirectRequestEmail, setRedirectRequestEmail] = useState(false);
   const [loginData, _] = useState(new LoginData());
   const [__, update] = useState();
   const [waiting, setWaiting] = useState(false);
 
-  const setErrorUsername = (str) => { loginData.errorUsername = str; update(); }
-  const setErrorPassword = (str) => { loginData.errorPassword = str; update(); }
   const setEmailUsername = (str) => { loginData.emailUsername = str; update(); }
   const setPassword = (str) => { loginData.password = str; update(); }
 
@@ -34,7 +31,6 @@ export default function LoginPage({setToken}) {
     e.preventDefault();
 
     await api_loginUser(loginData);
-    console.log(loginData.errorEmailUsername, loginData.errorPassword)
     if (!stringIsEmpty(loginData.token)) {
       storeToken(loginData.token);
       setToken(loginData.token);
@@ -42,7 +38,11 @@ export default function LoginPage({setToken}) {
 
     setTimeout(function() {
       setWaiting(false);
-    }, 1000);
+    }, 0);
+  }
+
+  if (redirectRequestEmail) {
+    return <Navigate to={link_verification_resend} />
   }
 
   return (
@@ -57,14 +57,28 @@ export default function LoginPage({setToken}) {
         }}
       >
         {
-          (loginData.hasError() && !stringIsEmpty(loginData.error))
+          (loginData.hasError() && !stringIsEmpty(loginData.error) || loginData.errorEmailNotVerified)
           ? (
             <Box container paddingBottom={3}>
-              <Alert fullWidth variant="filled" severity="error">
-                {loginData.error}
+              <Alert variant="filled" severity="error">
+                { (loginData.hasError() && !stringIsEmpty(loginData.error)) ? loginData.error 
+                : "Email not verified. Click the link we've provided you with in an email!"
+                }
               </Alert>
             </Box>
           ) : ""
+        }
+        {
+          (loginData.errorEmailNotVerified) 
+          ? <Button
+              fullWidth
+              variant="contained"
+              sx={{ mb: 5 }}
+              onClick={() => { setRedirectRequestEmail(true); }}
+            >
+              Request email again
+            </Button>
+          : ""
         }
         <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
           <LockOutlinedIcon />
@@ -118,20 +132,17 @@ export default function LoginPage({setToken}) {
           }  
           <Grid container>
             <Grid item xs>
-              <Link to={link_forgot_password} variant="body2">
+              <Link href={link_forgot_password} variant="body2">
                 Forgot password?
               </Link>
             </Grid>
             <Grid item>
-              <Link to={link_signup} variant="body2">
+              <Link href={link_signup} variant="body2">
                 {"New user? Sign Up"}
               </Link>
             </Grid>
           </Grid>
         </Box>
-      </Box>
-      <Box sx={{ mt: 8, mb: 4 }}>
-        <Copyright />
       </Box>
     </Container>
   );

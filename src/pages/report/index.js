@@ -1,41 +1,22 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-import CreateNewFolder from '@mui/icons-material/CreateNewFolder';
-import FolderDelete from '@mui/icons-material/FolderDelete';
-import { AppBar, Avatar, Button, Container, CssBaseline, getDividerUtilityClass, Grid, Icon, IconButton, Input, LinearProgress, linearProgressClasses, Link, Paper, styled, Toolbar, Typography } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import { makeStyles } from '@mui/styles';
-import { blue, blueGrey, deepOrange, green, orange, red } from '@mui/material/colors';
+import { AppBar, Avatar, Button, CircularProgress, Container, CssBaseline, getDividerUtilityClass, Grid, Icon, IconButton, Input, LinearProgress, linearProgressClasses, Link, Paper, styled, TextField, Toolbar, Typography } from "@mui/material";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import { InfoCard, SmallInfoCard } from '../../components/cards/infocard';
-import { DashboardPage } from '../dashboard';
 import { Box } from '@mui/system';
 import { Add, Assessment, CompareArrows, Delete, Info, InsertChart, Launch, MoveToInbox, Receipt, Share, ShoppingCart } from '@mui/icons-material';
-import { link_report } from '../../links/links';
-import { useSearchParams } from 'react-router-dom';
+import { useStyles_mainCard } from '../../styles/general/main_card';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { CryptoTaxBreadcrubs } from '../../components/widgets/breadcrubs';
+import { link_portfolio } from '../../links/links';
+import { ReportOverviewBar } from './ReportOveriew';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { insertUrlParam } from '../../controller/util/url_util';
+import { ReportData, report_data } from '../../api/report/report_api';
+import { DataGrid } from '@mui/x-data-grid';
+import { tripple_by_aggregate_columns, tuple_by_aggregate_columns } from './table_columns';
+import { useSnackbar } from 'notistack';
 
-  
-const useStyles = makeStyles((theme) => ({
-  menuButton: {
-    // marginRight: theme.spacing(2)
-  },
-  button: {
-    marginLeft: 12,
-  },
-  title: {
-    flexGrow: 1
-  },
-  toolbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 12, // theme.spacing(2)
-  },
-  content: {
-    marginTop: 42, // theme.spacing(2),
-    padding: 20, // theme.spacing(2)
-  }
-}));
 
 function PageWrapper({children}) {
   return <Container>
@@ -63,83 +44,382 @@ function CustomizedProgressBars() {
   );
 }
 
+const Item = styled(Paper)(({ theme }) => ({
+  backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
+  ...theme.typography.body2,
+  padding: theme.spacing(1),
+  textAlign: 'center',
+  color: theme.palette.text.secondary,
+}));
 
-function ReportPage(portfolio_id, transaction_page=0) {
-  const classes = useStyles();
 
-  var portfolio = {
-    'name': "Robin's Portfolio Report #13234"
+function ReportPage({ token }) {
+  const classes = useStyles_mainCard();
+  const { enqueueSnackbar } = useSnackbar();
+
+  // portfolio id
+  const { id: pid, rid } = useParams();
+
+  // [query params] ----------
+  const [searchParams, setSearchParams] = useSearchParams();
+  // const [transaction_page, setTransactionPage] = useState(searchParams.get("tt") ?? 0); TODO
+  // -------------------------  
+    
+  // var switch_tt_tab = async (tab) => {
+  //   insertUrlParam('tt', tab); // transaction type (tt)
+  //   setTransactionPage(tab);
+  //   switch_page_txs(1, false);
+  //   re_load_txs(tab, pageSizeTxs, pageNumberTxs);
+  // }
+
+  // ------------------------------------
+
+  const [loading, setLoading] = useState(true);
+  const [reportData, setReportData] = useState(new ReportData(pid));
+
+  const [rowsProfitsByCurrency, setRowsProfitsByCurrency] = useState([]);
+  const [rowsProfitsByExchange, setRowsProfitsByExchange] = useState([]);
+  const [rowsSellProfitsByCurrency, setRowsSellProfitsByCurrency] = useState([]);
+  const [rowsSellProfitsByExchange, setRowsSellProfitsByExchange] = useState([]);
+  const [rowsFeesByCurrency, setRowsFeesByCurrency] = useState([]);
+  const [rowsFeesByExchange, setRowsFeesByExchange] = useState([]);
+  // ------------------------------------
+
+  const re_load_report = async () => {
+    setTimeout(async () => {
+      setLoading(true);
+      
+      // ==============================
+      await report_data(token, pid, rid, reportData);
+
+      // TODO add Datagrid rows
+      const trippleMapper = tripple => ({
+        "id": tripple.key,
+        "sum_taxable_profit": tripple.taxable_profit,
+        "sum_realized_profit": tripple.realized_profit,
+      });
+      const tupleMapper = tuple => ({
+        "id": tuple.key,
+        "fee_sum": tuple.fee_sum,
+      });
+
+      setRowsProfitsByCurrency(reportData.profitByCurrency.map(trippleMapper));
+      setRowsProfitsByExchange(reportData.profitByExchange.map(trippleMapper));
+      setRowsSellProfitsByCurrency(reportData.profitByCurrency.map(trippleMapper));
+      setRowsSellProfitsByExchange(reportData.profitByExchange.map(trippleMapper));
+      setRowsFeesByCurrency(reportData.feesByCurrency.map(tupleMapper));
+      setRowsFeesByExchange(reportData.feesByExchange.map(tupleMapper));
+      // ==============================
+
+      setLoading(false);
+    }, 0);
   }
 
-  return (    
-      <PageWrapper>
-        <Paper className={classes.content}>
+  useEffect(async () => {
+    await re_load_report();
+    return () => {}
+  }, [])
 
-          <Box
-            component="main"
-            // sx={{
-            //   flexGrow: 1,
-            //   py: 8
-            // }}
-          >
-              <Grid container spacing="1" alignItems="center">
-                <InsertChart />
-                <Typography
-                  variant="h6"
-                  noWrap
-                  marginLeft={1.5}
-                  component="span">
-                    {portfolio.name}
-                </Typography>
-              </Grid>
+  // ------------------------------------
 
+  // TODO
+  // TODO
+  // TODO
+  const onClickShare = () => {
+    enqueueSnackbar('Not availlable, yet.', { variant: 'info'});
+  }
 
-              <Grid
-                container
-                spacing={3}
-              >
-                {/* <Grid
-                  item
-                  lg={3}
-                  sm={4}
-                  xl={3}
-                  xs={6}
-                >
-                  <InfoCard />
-                </Grid> */}
-                <Grid
-                  item
-                  lg={2}
-                  sm={3}
-                  xl={2}
-                  xs={3}
-                >
-                  <SmallInfoCard />
-                </Grid>
-                <Grid
-                  item
-                  lg={2}
-                  sm={3}
-                  xl={2}
-                  xs={3}
-                >
-                  <SmallInfoCard />
-                </Grid>
-                <Grid
-                  item
-                  lg={2}
-                  sm={3}
-                  xl={2}
-                  xs={3}
-                >
-                  <SmallInfoCard />
-                </Grid>
-              </Grid>
+  const onClickDownloadReport = () => {
+    enqueueSnackbar('Not availlable, yet.', { variant: 'info'});
+  }
+
+  // ------------------------------------
+  
+  var content_card = ""
+  if (loading){
+    content_card = <center><Box p={7}><CircularProgress /></Box></center>
+  }
+  else if (reportData.hasError()){
+    content_card = <div>Error! {reportData.error}</div>
+  } else {
+    content_card = (
+      <Box>
+        <Box
+          component="main"
+          // sx={{
+          //   flexGrow: 1,
+          //   py: 8
+          // }}
+        >
+            <Grid container spacing="1" alignItems="center">
+              <InsertChart />
+              <Typography
+                variant="h6"
+                noWrap
+                marginLeft={1.5}
+                component="span">
+                  {reportData.report.title}
+              </Typography>
+            </Grid>
+  
+          <Box mt={3}>
+            <ReportOverviewBar
+              txs={reportData.report.transactions}
+              tax_sum={reportData.report.taxable_profit}
+              profit_sum={reportData.report.realized_profit}
+              deposit_profit={reportData.report.deposit_profit}
+              sell_profit={reportData.report.sell_profit}
+              fee_sum={reportData.report.fee_sum}
+              base_currency={reportData.report.base_currency}
+              currencies={reportData.report.currencies}
+              wallets={reportData.report.wallets}
+            />
           </Box>
+        </Box>
 
-          {/* TODO: export to PDF */}
-          {/* TODO: list sell orders (consumers buy-sell pair) */}
+        <Box mt={3}>
+          <Button variant="outlined" onClick={onClickShare}>SHARE</Button>
+          <Button variant="contained" onClick={onClickDownloadReport} style={{ textDecoration: 'none', marginLeft: "1.2rem" }}>DOWNLOAD REPORT CSV's</Button>
+        </Box>
+  
+        <Box mt={3}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+              <Box>
+                <div className={classes.toolbar}>
+                  <Typography
+                    variant="h6"
+                    noWrap
+                    marginLeft={1.5}
+                    component="span">
+                      <Grid container alignItems="center"><Receipt /> <span style={{paddingLeft: 10}}>Profits by Currency</span></Grid>
+                  </Typography>
+                </div>
+                <div style={{  width: "100%" }}>
+                  <DataGrid
+                    rows={rowsProfitsByCurrency}
+                    columns={tripple_by_aggregate_columns("Currency", reportData.report.base_currency)}
+                    autoHeight={true}
+                    initialState={{
+                      sorting: {
+                        sortModel: [
+                          {
+                            field: 'sum_taxable_profit',
+                            sort: 'desc',
+                          },
+                        ],
+                      },
+                      pagination: {
+                        pageSize: 5
+                      }
+                    }}
+                  />
+                </div>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+              <Box>
+                <div className={classes.toolbar}>
+                  <Typography
+                    variant="h6"
+                    noWrap
+                    marginLeft={1.5}
+                    component="span">
+                      <Grid container alignItems="center"><Receipt /> <span style={{paddingLeft: 10}}>Profits by Exchange/Wallet</span></Grid>
+                  </Typography>
+                </div>
+                <div style={{ width: "100%" }}>
+                  <DataGrid
+                    rows={rowsProfitsByExchange}
+                    columns={tripple_by_aggregate_columns("Exchange/Wallet", reportData.report.base_currency)}
+                    autoHeight={true}
+                    initialState={{
+                      sorting: {
+                        sortModel: [
+                          {
+                            field: 'sum_taxable_profit',
+                            sort: 'desc',
+                          },
+                        ],
+                      },
+                      pagination: {
+                        pageSize: 5
+                      }
+                    }}
+                  />
+                </div>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+              <Box>
+                <div className={classes.toolbar}>
+                  <Typography
+                    variant="h6"
+                    noWrap
+                    marginLeft={1.5}
+                    component="span">
+                      <Grid container alignItems="center"><Receipt /> <span style={{paddingLeft: 10}}>Fees by Currency</span></Grid>
+                  </Typography>
+                </div>
+                <div style={{ width: "100%" }}>
+                  <DataGrid
+                    rows={rowsFeesByCurrency}
+                    columns={tuple_by_aggregate_columns("Currency", reportData.report.base_currency)}
+                    autoHeight={true}
+                    initialState={{
+                      sorting: {
+                        sortModel: [
+                          {
+                            field: 'fee_sum',
+                            sort: 'desc',
+                          },
+                        ],
+                      },
+                      pagination: {
+                        pageSize: 5
+                      }
+                    }}
+                  />
+                </div>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+              <Box>
+                <div className={classes.toolbar}>
+                  <Typography
+                    variant="h6"
+                    noWrap
+                    marginLeft={1.5}
+                    component="span">
+                      <Grid container alignItems="center"><Receipt /> <span style={{paddingLeft: 10}}>Fees by Exchange/Wallet</span></Grid>
+                  </Typography>
+                </div>
+                <div style={{ width: "100%" }}>
+                  <DataGrid
+                    rows={rowsFeesByExchange}
+                    columns={tuple_by_aggregate_columns("Exchange/Wallet", reportData.report.base_currency)}
+                    autoHeight={true}
+                    initialState={{
+                      sorting: {
+                        sortModel: [
+                          {
+                            field: 'fee_sum',
+                            sort: 'desc',
+                          },
+                        ],
+                      },
+                      pagination: {
+                        pageSize: 5
+                      }
+                    }}
+                  />
+                </div>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+              <Box>
+                <div className={classes.toolbar}>
+                  <Typography
+                    variant="h6"
+                    noWrap
+                    marginLeft={1.5}
+                    component="span">
+                      <Grid container alignItems="center"><Receipt /> <span style={{paddingLeft: 10}}>Fees by Currency</span></Grid>
+                  </Typography>
+                </div>
+                <div style={{ width: "100%" }}>
+                  <DataGrid
+                    rows={rowsSellProfitsByCurrency}
+                    columns={tripple_by_aggregate_columns("Currency", reportData.report.base_currency)}
+                    autoHeight={true}
+                    initialState={{
+                      sorting: {
+                        sortModel: [
+                          {
+                            field: 'sum_taxable_profit',
+                            sort: 'desc',
+                          },
+                        ],
+                      },
+                      pagination: {
+                        pageSize: 5
+                      }
+                    }}
+                  />
+                </div>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+              <Box>
+                <div className={classes.toolbar}>
+                  <Typography
+                    variant="h6"
+                    noWrap
+                    marginLeft={1.5}
+                    component="span">
+                      <Grid container alignItems="center"><Receipt /> <span style={{paddingLeft: 10}}>Fees by Exchange/Wallet</span></Grid>
+                  </Typography>
+                </div>
+                <div style={{ width: "100%" }}>
+                  <DataGrid
+                    rows={rowsSellProfitsByExchange}
+                    columns={tripple_by_aggregate_columns("Exchange/Wallet", reportData.report.base_currency)}
+                    autoHeight={true}
+                    initialState={{
+                      sorting: {
+                        sortModel: [
+                          {
+                            field: 'sum_taxable_profit',
+                            sort: 'desc',
+                          },
+                        ],
+                      },
+                      pagination: {
+                        pageSize: 5
+                      }
+                    }}
+                  />
+                </div>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+  
+      </Box>
+    );
+  }
 
+
+{/* TODO: export to PDF */}
+{/* TODO: list sell orders (consumers buy-sell pair) */}
+  
+
+  return (
+      <PageWrapper>
+        <CryptoTaxBreadcrubs items={[
+          {
+            title: "Portfolios", 
+            href: "/portfolios/", 
+            icon: <AccountBalanceWalletIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+          },
+          {
+            title: pid, 
+            href: link_portfolio(pid), 
+            icon: null
+          },
+          {
+            title: "Report", 
+            href: "", 
+            icon: <CloudUploadIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+          },
+          {
+            title: rid, 
+            href: "", 
+            icon: null
+          },
+        ]} />
+        <Paper className={classes.content}>
+          { content_card }
         </Paper>
       </PageWrapper>
   );

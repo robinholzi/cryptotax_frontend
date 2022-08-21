@@ -19,6 +19,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { green, grey } from '@mui/material/colors';
 import { link_login, link_portfolios } from '../../links/links';
 import Copyright from '../../components/copyright';
+import { FooterWidget } from '../../components/FooterBar';
 
 export function DashboardPage() {
   
@@ -61,26 +62,9 @@ export function DashboardPage() {
                 Login
               </Button>
             </Stack>
-          
           </Container>
         </Box>
       </main>
-      {/* Footer  */}
-      <Box sx={{ bgcolor: 'transparent', p: 6 }} component="footer">
-        <Typography variant="h6" align="center" gutterBottom>
-        CryptoTax
-        </Typography>
-        {/* <Typography
-          variant="subtitle1"
-          align="center"
-          color="text.secondary"
-          component="p"
-        >
-          Crypto portfolio analysis.
-        </Typography> */}
-        <Copyright />
-      </Box>
-      {/* End footer */}
     </>    
   )
 }

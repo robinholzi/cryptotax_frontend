@@ -1,21 +1,23 @@
 
 import React, { useEffect, useState } from 'react';
-import {useQuery} from 'react-query'
 
 import CreateNewFolder from '@mui/icons-material/CreateNewFolder';
 import FolderDelete from '@mui/icons-material/FolderDelete';
-import ModeEdit from '@mui/icons-material/ModeEdit';
-import { AppBar, Avatar, Button, CircularProgress, Container, CssBaseline, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, getDividerUtilityClass, Icon, IconButton, Input, Link, Paper, Slide, styled, TextField, Toolbar, Typography } from "@mui/material";
+import { Avatar, Button, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Link, Paper, Slide, TextField, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { makeStyles } from '@mui/styles';
-import { FeaturedPlayList, Info, InfoOutlined, InfoRounded, InfoSharp, Launch, Share } from '@mui/icons-material';
-import styledEngine from '@mui/styled-engine';
+import { Info, Launch, Share } from '@mui/icons-material';
 import { blue, green, red } from '@mui/material/colors';
 import { link_portfolio } from '../../links/links';
-import { Box } from '@mui/system';
 import { useSnackbar } from 'notistack';
 import { stringIsEmpty } from "../../utils/string";
 import { PortfolioListData, portfolio_create, portfolio_delete, portfolio_list_my } from '../../api/portfolio/portfolio_api';
+import { useStyles_mainCard } from '../../styles/general/main_card';
+import { CryptoTaxBreadcrubs } from '../../components/widgets/breadcrubs';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { insertUrlParam } from '../../controller/util/url_util';
+import { useSearchParams } from 'react-router-dom';
+import set from 'date-fns/set/index';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -110,63 +112,73 @@ function PageWrapper({children}) {
       {children}
   </Container>
 }
-  
-const useStyles = makeStyles((theme) => ({
-  menuButton: {
-    // marginRight: theme.spacing(2)
-  },
-  button: {
-    marginLeft: 12,
-  },
-  title: {
-    flexGrow: 1
-  },
-  toolbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 12, // theme.spacing(2)
-  },
-  content: {
-    marginTop: 42, // theme.spacing(2),
-    padding: 20, // theme.spacing(2)
-  }
-}));
 
 function PortfoliosPage({token}) {
-  const classes = useStyles();
+  const classes = useStyles_mainCard();
   const { enqueueSnackbar } = useSnackbar();
 
   const [loading, setLoading] = useState(true);
   const [inputsBlocked, setInputsBlocked] = useState(false);
   const [portfolioListData, setPortfolioListData] = useState(new PortfolioListData())
+
+  // ----------
   const [rows, setRows] = useState([])
+  const [rowCount, setRowCount] = useState(0);
+  // ----------
 
-  const re_load_data = async () => {
-    var delayInMilliseconds = 10;
-    setTimeout(async () => {
-      await portfolio_list_my(token, portfolioListData);
-      var new_rows = [];
-      for (const pf of portfolioListData.dataList) {
-        new_rows.push(
-          { 
-            id: pf.pid, title: pf.title, transactions: pf.transactions, 
-            exchanges: pf.exchanges, reports: pf.reports, 
-            latestReportProfit: pf.latest_report_profit + pf.latest_report_currency, 
-            // latestReportState: pf.latest_report_currency, 
-            latestReportDate: pf.latest_report_date 
-          }
-        );
-      }
+  // [query params] ----------
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [pageSize, setPageSize] = useState(parseInt(searchParams.get("size") ?? 25));
+  const [pageNumber, setPageNumber] = useState(parseInt(searchParams.get("page") ?? 1));
+  // -------------------------
 
-      setRows(new_rows)
-      setLoading(false);
-    }, delayInMilliseconds);
+  const re_load_data = async (size, number) => {
+    setLoading(true);
+
+    await portfolio_list_my(token, portfolioListData, 
+      size ?? (pageSize ?? 25), 
+      number ?? (pageNumber ?? 1)
+    );
+    var new_rows = [];
+    for (const pf of portfolioListData.dataList) {
+      new_rows.push(
+        { 
+          id: pf.pid, title: pf.title, transactions: pf.transactions, 
+          exchanges: pf.exchanges, reports: pf.reports, 
+          latestReportProfit: pf.latest_report_profit 
+            ? `${pf.latest_report_profit.toPrecision(5)} ${pf.latest_report_currency}`
+            : "/", 
+          // latestReportState: pf.latest_report_currency, 
+          latestReportDate: pf.latest_report_date 
+        }
+      );
+    }
+
+    setRowCount(portfolioListData.number_portfolios ?? 0);
+    setRows(new_rows)
+    setLoading(false);
   }
 
   useEffect(async () => {
     await re_load_data();
     return () => {}
   }, [])
+
+  // ---
+  var update_page_size = async (page_size) => {
+    const size = Math.max(5, Math.min(100, page_size));
+    insertUrlParam('size', size);
+    setPageSize(size);
+    setPageNumber(1);
+    re_load_data(size, pageNumber);
+  }
+  var switch_page = async (page_number) => { // 1-based argument
+    const number = Math.max(1, page_number);
+    insertUrlParam('page', number);
+    setPageNumber(number);
+    re_load_data(pageSize, number);
+  }
+  // ---
 
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [newPortfolioName, setNewPortfolioName] = React.useState("");
@@ -177,7 +189,7 @@ function PortfoliosPage({token}) {
   const closeCreateDialog = async () => setCreateDialogOpen(false);
   const confirmCreatePortfolio = async () => {
     if (stringIsEmpty(newPortfolioName) || newPortfolioName.length < 4) {
-      enqueueSnackbar('Portfolio name has to be at least 4 characters long!', { variant: 'error'});
+      enqueueSnackbar('Portfolio name has to be at least 4 characters long!', { variant: 'error' });
       return;
     }
     closeCreateDialog();
@@ -189,11 +201,11 @@ function PortfoliosPage({token}) {
       enqueueSnackbar('Created portfolio!', { variant: 'success'});
 
       setTimeout(async () => {
-        await re_load_data();
         setLoading(true);
+        await re_load_data();
       }, 100);
     } else {
-      enqueueSnackbar('Creating portfolio failed: ' + res, { variant: 'error'});
+      enqueueSnackbar('Creating portfolio failed: ' + res, { variant: 'error' });
       setLoading(false);
     }
 
@@ -206,7 +218,7 @@ function PortfoliosPage({token}) {
   const clickDelete = async () => {
     
     if (selectionModel.length < 1) {
-      enqueueSnackbar('You have to select a portfolio first!', { variant: 'error'});
+      enqueueSnackbar('You have to select a portfolio first!', { variant: 'error' });
       return;
     }
     setConfirmDeleteOpen(true);
@@ -229,7 +241,7 @@ function PortfoliosPage({token}) {
       );
       setRows(newRows);
     } else {
-      enqueueSnackbar('Deleting portfolios failed: ' + res, { variant: 'error'});
+      enqueueSnackbar('Deleting portfolios failed: ' + res, { variant: 'error' });
     }
     setInputsBlocked(false);
     return;
@@ -239,11 +251,11 @@ function PortfoliosPage({token}) {
   const clickShare = async () => {
     console.log("selectionModel: ", selectionModel);
     if (selectionModel.length < 1) {
-      enqueueSnackbar('You have to select a portfolio first!', { variant: 'error'});
+      enqueueSnackbar('You have to select a portfolio first!', { variant: 'error' });
       return;
     }
     if (selectionModel.length > 1) {
-      enqueueSnackbar('You can only share 1 portfolio at a time!', { variant: 'error'});
+      enqueueSnackbar('You can only share 1 portfolio at a time!', { variant: 'error' });
       return;
     }
     setShareDialogOpen(true);
@@ -270,29 +282,77 @@ function PortfoliosPage({token}) {
     // for (const attr of model) {
     //   console.log("handleEditRowsModelChange -> ", attr)
     // }
-    // enqueueSnackbar('handleEditRowsModelChange!', { variant: 'info'});
+    // console.log("model: ", model)
+    // console.log("model.key: ", model.key)
+    // console.log("model.keys: ", model.keys)
+    // rows = rows.map((v, i) => (v['id']==) )
     setEditRowsModel(model);
   }, []);
-  const handleRowEditCommit = React.useCallback((pid, event) => {
+  const handleRowEditCommit = React.useCallback(async (pid) => {
+      console.log('rows: ', rows.find((val) => val['id']==pid))
+      console.log('rows1: ', rows)
+      const obj = rows.find((val) => val['id'] == pid)
+      // TODO: get new title: HOW?
+      // const res = await portfolio_update(token, pid, obj['title']);
+      // if (res === 'success') {
+      //   enqueueSnackbar('updated title successfully.', { variant: 'success'});
+      // } else {
+      //   enqueueSnackbar('error updating title!', { variant: 'error' });
+      // }
+
+      // try {
+      //   setRows((prev) =>
+      //     prev.map((row) => (row.id === params.id ? { ...row, ...response } : row)),
+      //   );
+      // } catch (err) {
+      //   setSnackbar({ children: 'Error while saving user', severity: 'error' });
+      //   // Restore the row in case of error
+      //   setRows((prev) => [...prev]);
+
+      // }
+
+      // var new_rows = [];
+      // for (const pf of portfolioListData.dataList) {
+      //   new_rows.push(
+      //     { 
+      //       id: pf.pid, title: pf.title, transactions: pf.transactions, 
+      //       exchanges: pf.exchanges, reports: pf.reports, 
+      //       latestReportProfit: pf.latest_report_profit + pf.latest_report_currency, 
+      //       // latestReportState: pf.latest_report_currency, 
+      //       latestReportDate: pf.latest_report_date 
+      //     }
+      //   );
+      // }
+
+      // setRows(new_rows)
+      // setLoading(false);
+
+
     // TODO update
     // TODO update
     // TODO
     // TODO
-    enqueueSnackbar('handleRowEditCommit!', { variant: 'info'});
   }, []);
 
 
   var datagrid = ""
-  if (loading){
-    datagrid = <center><Box p={7}><CircularProgress /></Box></center>
-  }
-  else if (portfolioListData.hasError()){
+  if (portfolioListData.hasError()){
     datagrid = <div>Error! {portfolioListData.error}</div>
-  }
-  else {
+  } else {
     datagrid = (
-      <DataGrid rows={rows} columns={columns} 
-        checkboxSelection hideFooterPagination // TODO
+      <DataGrid 
+        rows={rows} 
+        columns={columns} 
+        checkboxSelection 
+
+        paginationMode='server'
+        loading={loading}
+        rowCount={rowCount}
+        pageSize={pageSize}
+        page={pageNumber-1}
+        onPageSizeChange={(pageSize, _) => { update_page_size(pageSize); }}
+        onPageChange={(page, _) => { switch_page(page+1); }}
+
         onSelectionModelChange={ (newSelection) => { 
           setSelectionModel(newSelection);
         } }
@@ -309,6 +369,13 @@ function PortfoliosPage({token}) {
 
   return (
     <PageWrapper>
+      <CryptoTaxBreadcrubs items={[
+        {
+          title: "Portfolios", 
+          href: "", 
+          icon: <AccountBalanceWalletIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+        },
+      ]} />
       <Paper className={classes.content}>
         <div className={classes.toolbar}>
           <Typography variant="h6" component="h2" color="primary">
@@ -357,7 +424,7 @@ function PortfoliosPage({token}) {
               </div>
           }
         </div>
-        <div style={{ height: 400, width: "100%" }}>
+        <div style={{ height: 600, width: "100%" }}>
           { datagrid }
         </div>
 
@@ -365,10 +432,6 @@ function PortfoliosPage({token}) {
         <Dialog open={createDialogOpen} onClose={closeCreateDialog}>
           <DialogTitle>Create new Portfolio</DialogTitle>
           <DialogContent>
-            <DialogContentText>
-              Do you really want to make this Portfolio public by link access?
-              Note that this operation cannot be revoked for now...
-            </DialogContentText>
             <TextField
               autoFocus
               margin="dense"
@@ -420,10 +483,6 @@ function PortfoliosPage({token}) {
         </Dialog>
         {/* ========================================= */}
         
-
-        {/* <div style={{ height: 400, width: '100%' }}>
-          <DataGridPro {...data} />
-        </div> */}
       </Paper>
     </PageWrapper>
   );

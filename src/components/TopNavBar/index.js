@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import { Launch } from '@mui/icons-material';
 import { link_portfolios, link_root } from '../../links/links';
 import { orange } from '@mui/material/colors';
+import { Grid } from '@mui/material';
 
 const pages = ['Portfolios'];  // TODO: 'Upgrade to Premium 💎'
 const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
@@ -94,15 +95,31 @@ const TopNavBar = () => {
               ))}
             </Menu>
           </Box>
-          <Typography
-            variant="h6"
-            noWrap
-            component="span"
-            onClick={() => window.location = (window.location.origin)}
-            sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' }, color: 'white' }}
+          <Grid
+            container
+            spacing={0}
+            direction="column"
+            alignItems="center"
+            justifyContent="center"
           >
-            CryptoTax 🪙
-          </Typography>
+            <Grid item>
+            <Link to={link_root} style={{ textDecoration: 'none' }}
+              component="span"
+              sx={{ flexGrow: 1, display: { xs: 'span', md: 'none' }, color: 'white' }}
+            >
+              <Typography
+                variant="h6"
+                noWrap
+                component="span"
+                onClick={() => window.location = (window.location.origin)}
+                sx={{ flexGow: 1, display: { xs: 'span', md: 'none' }, color: 'white' }}
+              >
+                CryptoTax 🪙
+              </Typography>
+            </Link>
+            </Grid>   
+            
+          </Grid> 
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
                 <Link key={page} to={link_portfolios} style={{ textDecoration: 'none' }}>
